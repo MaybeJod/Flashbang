@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LED Control and Photo Capture</title>
+    <style>
+        #video {
+            border: 1px solid black; /* Add a border to the video element */
+            box-shadow: 2px 2px 3px black; /* Add a shadow effect */
+            width: 320px; /* Set width for the video */
+            height: 240px; /* Set height for the video */
+        }
+
+        #photo {
+            border: 1px solid black; /* Add a border to the photo element */
+            box-shadow: 2px 2px 3px black; /* Add a shadow effect */
+            width: 320px; /* Set width for the photo */
+            height: 240px; /* Set height for the photo */
+        }
+
+        #canvas {
+            display: none; /* Hide the canvas element as it will be used off-screen */
+        }
+    </style>
+</head>
+<body>
+    <button id="start-button">Start Taking Photos</button> <!-- Button to start taking photos -->
+    <div>
+        <video id="video" autoplay></video> <!-- Video element to display the webcam feed -->
+        <canvas id="canvas"></canvas> <!-- Canvas element to draw the photo on -->
+        <img id="photo" alt="The screen capture will appear in this box." /> <!-- Image element to display the captured photo -->
+    </div>
+    <script src="/socket.io/socket.io.js"></script> <!-- Load the Socket.io client library -->
+    <script>
+        const socket = io(); // Initialize Socket.io client
+        const video = document.getElementById('video'); // Get the video element
+        const canvas = document.getElementById('canvas'); // Get the canvas element
+        const photo = document.getElementById('photo'); // Get the photo image element
+
+        // Access the webcam
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then((stream) => {
+                video.srcObject = stream; // Set the video source to the webcam stream
+                video.play(); // Start playing the video
+            })
+            .catch((err) => {
+                console.error(`An error occurred: ${err}`); // Log any errors accessing the webcam
+            });
+
+        // Event listener for the button click to start taking photos
+        document.getElementById('start-button').addEventListener('click', () => {
+            // Emit a 'startTakingPhotos' event to the server
+            socket.emit('startTakingPhotos');
+        });
+
+        // Listen for the 'takePhoto' event from the server
+        socket.on('takePhoto', () => {
+            takePicture(); // Call the function to take a picture
+        });
+
+        // Function to capture a photo from the video feed
+        function takePicture() {
+            const context = canvas.getContext('2d'); // Get the 2D rendering context for the canvas
+            context.drawImage(video, 0, 0, canvas.width, canvas.height); // Draw the current video frame to the canvas
+
+            const data = canvas.toDataURL('image/png'); // Convert the canvas content to a PNG image
+            photo.setAttribute('src', data); // Set the photo element's source to the captured image
+            console.log('Photo taken'); // Log that a photo was taken
+        }
+    </script>
+</body>
+</html>
